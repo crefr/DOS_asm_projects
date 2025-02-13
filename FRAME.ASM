@@ -20,14 +20,16 @@
 org 100h
 
 Start:
+        mov si, 81h
+        call ParseArgs                  ; getting dl = width, dh = height
+
         mov bx, VIDEO
         mov es, bx                      ; es = video seg
 
         mov ah, COLOR                   ; ah(color)      = COLOR
         mov bx, offset STYLE            ; bx(style addr) = &STYLE
-        mov dl, 30                      ; dl(width)      = 15
-        mov dh, 9                       ; dh(height)     = 5
         mov si, offset STRING
+
         call DrawCard
 
         mov ax, 4c00h                   ; DOS Fn 4c = exit(al)
@@ -69,15 +71,48 @@ DrawCard proc
 endp
 
 ;-------------------------------------------------------
+; Parses args from shell
+; Entry:
+;   ds:si = str_addr
+; Exit:
+;   dl = width
+;   dh = height
+; Destr: si, bx, dxs
+;-------------------------------------------------------
+ParseArgs   proc
+    call atoi
+    mov dl, bl
+
+    call atoi
+    mov dh, bl
+
+    ret
+endp
+
+
+;-------------------------------------------------------
 ; Points si to the first non-space symbol
 ; Entry:
 ;   ds:si = str_addr
 ; Exit:
 ;   bx = unsigned integer from str
-; Destr: si, bx, ax
+; Destr: si, bx
 ;-------------------------------------------------------
 atoi        proc
+    ;-----skipping spaces-----
+        push es                 ; saving es
+
+        mov bx, ds
+        mov es, bx              ; es = ds (for skipSpaces)
+
+        xchg di, si
+        call SkipSpaces         ; skipping spaces -_-
+        xchg di, si
+    ;-------------------------
+        push ax                 ; saving ax
+
         xor ah, ah              ; ax = al
+        xor bx, bx
     atoi_loop_start:
         lodsb                   ; al = string[ds:si]; si++
         sub al, '0'
@@ -85,10 +120,15 @@ atoi        proc
         cmp al, 9
         ja atoi_loop_end
 
-        mul bx, 10
+        imul bx, bx, 10
         add bx, ax
 
+        jmp atoi_loop_start
+
     atoi_loop_end:
+        pop ax                  ; restoring ax
+        pop es                  ; restoring es
+
         ret
 endp
 
@@ -104,6 +144,8 @@ SkipSpaces  proc
         mov al, ' '
 
         repe scasb
+
+        dec di
 
         ret
 endp
@@ -125,8 +167,7 @@ PrintLine   proc
         je print_loop_end
 
     print_loop:
-        mov al, byte ptr[si]
-        inc si
+        lodsb
 
         stosw
 
