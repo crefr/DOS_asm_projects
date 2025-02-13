@@ -91,7 +91,7 @@ endp
 
 
 ;-------------------------------------------------------
-; Points si to the first non-space symbol
+; Scans unsigned decimal integer from ds:si string, skip spaces if needs
 ; Entry:
 ;   ds:si = str_addr
 ; Exit:
@@ -109,6 +109,7 @@ atoi        proc
         call SkipSpaces         ; skipping spaces -_-
         xchg di, si
     ;-------------------------
+
         push ax                 ; saving ax
 
         xor ah, ah              ; ax = al
@@ -128,6 +129,58 @@ atoi        proc
     atoi_loop_end:
         pop ax                  ; restoring ax
         pop es                  ; restoring es
+
+        ret
+endp
+
+;-------------------------------------------------------
+; Scans unsigned decimal integer from ds:si string, skip spaces if needs
+; Entry:
+;   ds:si = str_addr
+; Exit:
+;   bx = unsigned integer from str
+; Destr: si, bx
+;-------------------------------------------------------
+atoi_hex    proc
+    ;-----skipping spaces-----
+        push es                     ; saving es
+
+        mov bx, ds
+        mov es, bx                  ; es = ds (for skipSpaces)
+
+        xchg di, si
+        call SkipSpaces             ; skipping spaces -_-
+        xchg di, si
+    ;-------------------------
+
+        push ax                     ; saving ax
+
+        xor ah, ah                  ; ax = al
+        xor bx, bx
+    atoi_hex_loop_start:
+        lodsb                       ; al = string[ds:si]; si++
+        sub al, '0'
+
+        cmp al, 9                   ; if scanned char is between '0' and '9'
+        jbe atoi_hex_scanned_digit  ; then adding it to answer
+
+    ; --- trying letters (a - f) ---
+        sub al, 'a' - '0'
+
+        cmp al, 5                   ; if scanned char is not between 'a' and 'f'
+        ja atoi_hex_loop_end        ; then ending
+
+        add ax, 10
+
+    atoi_hex_scanned_digit:
+        shl bx, 4                   ; bx *= 16
+        add bx, ax
+
+        jmp atoi_hex_loop_start
+
+    atoi_hex_loop_end:
+        pop ax                      ; restoring ax
+        pop es                      ; restoring es
 
         ret
 endp
