@@ -2,11 +2,28 @@
 .286
 
 .data
-    STR_END     equ 0
+    STR_END     equ 0Dh
 
     STRING      db 'Fuck ASSembly!!!', STR_END
     ; STYLE       db '123456789'
-    STYLE       db  201, 205, 187
+
+                ; first style
+    STYLE       db  218, 196, 191
+                db  179, ' ', 179
+                db  192, 196, 217
+
+                ; second style
+                db  201, 205, 187
+                db  186, ' ', 186
+                db  200, 205, 188
+
+                ; style 3
+                db    3,   3,   3
+                db    3, ' ',   3
+                db    3,   3,   3
+
+                ; style 4
+                db  201, 205, 187
                 db  186, ' ', 186
                 db  200, 205, 188
 
@@ -14,21 +31,18 @@
     WID         equ 80
     HEIT        equ 25
 
-    COLOR       equ 0C3h
+    ; COLOR       equ 0C3h
 
 .code
 org 100h
 
 Start:
-        mov si, 81h
-        call ParseArgs                  ; getting dl = width, dh = height
+        mov si, 81h                     ; start of the args str
 
         mov bx, VIDEO
         mov es, bx                      ; es = video seg
 
-        mov ah, COLOR                   ; ah(color)      = COLOR
-        mov bx, offset STYLE            ; bx(style addr) = &STYLE
-        mov si, offset STRING
+        call ParseArgs                  ; getting args
 
         call DrawCard
 
@@ -77,16 +91,51 @@ endp
 ; Exit:
 ;   dl = width
 ;   dh = height
-; Destr: si, bx, dxs
+;   ah = color
+;   bx = style str addr
+;   si = output str addr
+; Destr: si, bx, dx, ah
 ;-------------------------------------------------------
 ParseArgs   proc
-    call atoi
-    mov dl, bl
+        call atoi                   ; getting width
+        mov dl, bl
 
-    call atoi
-    mov dh, bl
+        call atoi                   ; getting height
+        mov dh, bl
 
-    ret
+        call atoi_hex               ; getting color
+        mov ah, bl
+
+        call atoi                   ; getting style number (in bl)
+
+        ; we cannot use atoi until the endp (bx = style number)s
+
+    ;--- getting style str addr ---
+        cmp bl, 0                           ; if bl != 0
+        jne parser_use_standard_style       ; then using one of the standard styles
+                                            ; else
+        mov bx, si
+        add si, 9                           ; si += len(style str)
+
+        jmp parser_end
+
+    parser_use_standard_style:
+        dec bl                      ; style number is bl-1 (starting with 0)
+
+        mov bh, bl                  ; num of styles * 9 should be < 255
+
+        shl bh, 3
+        add bh, bl                  ; bh = bl * 9
+
+        shr bx, 8                   ; bx = bh = offset of STYLE label
+
+        add bx, offset STYLE        ; bx = addr of standard style str
+    ;------------------------------
+
+    parser_end:
+        ; now si is on the output string as should
+
+        ret
 endp
 
 
@@ -105,7 +154,7 @@ atoi        proc
         mov bx, ds
         mov es, bx              ; es = ds (for skipSpaces)
 
-        xchg di, si
+        xchg di, si             ; SkipSpaces needs string tp be in es:di
         call SkipSpaces         ; skipping spaces -_-
         xchg di, si
     ;-------------------------
@@ -127,6 +176,8 @@ atoi        proc
         jmp atoi_loop_start
 
     atoi_loop_end:
+        dec si
+
         pop ax                  ; restoring ax
         pop es                  ; restoring es
 
@@ -134,7 +185,7 @@ atoi        proc
 endp
 
 ;-------------------------------------------------------
-; Scans unsigned decimal integer from ds:si string, skip spaces if needs
+; Scans unsigned hexadecimal integer from ds:si string, skip spaces if needs
 ; Entry:
 ;   ds:si = str_addr
 ; Exit:
@@ -179,6 +230,8 @@ atoi_hex    proc
         jmp atoi_hex_loop_start
 
     atoi_hex_loop_end:
+        dec si
+
         pop ax                      ; restoring ax
         pop es                      ; restoring es
 
