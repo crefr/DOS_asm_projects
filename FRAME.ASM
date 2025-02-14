@@ -4,28 +4,35 @@
 .data
     STR_END     equ 0Dh
 
-    STRING      db 'Fuck ASSembly!!!', STR_END
-    ; STYLE       db '123456789'
+    STYLE:  ; first style
+            db  218, 196, 191
+            db  179, ' ', 179
+            db  192, 196, 217
 
-                ; first style
-    STYLE       db  218, 196, 191
-                db  179, ' ', 179
-                db  192, 196, 217
+            ; second style
+            db  201, 205, 187
+            db  186, ' ', 186
+            db  200, 205, 188
 
-                ; second style
-                db  201, 205, 187
-                db  186, ' ', 186
-                db  200, 205, 188
+            ; style 3
+            db    3,   3,   3
+            db    3, ' ',   3
+            db    3,   3,   3
 
-                ; style 3
-                db    3,   3,   3
-                db    3, ' ',   3
-                db    3,   3,   3
+            ; style 4
+            db '123456789'
 
-                ; style 4
-                db  201, 205, 187
-                db  186, ' ', 186
-                db  200, 205, 188
+            ; style 5
+            db  '/-\| |\-/'
+
+            ; style 6
+            db '|-|x x|-|'
+
+            ; style 7
+            db '=+=@ @=+='
+
+            ; style 8
+            db '+-+| |+-+'
 
     VIDEO       equ 0b800h          ;video segment addr
     WID         equ 80
@@ -114,6 +121,9 @@ ParseArgs   proc
         cmp bl, 0                           ; if bl != 0
         jne parser_use_standard_style       ; then using one of the standard styles
                                             ; else
+
+        call SkipSpaces
+
         mov bx, si
         add si, 9                           ; si += len(style str)
 
@@ -133,6 +143,7 @@ ParseArgs   proc
     ;------------------------------
 
     parser_end:
+        call SkipSpaces
         ; now si is on the output string as should
 
         ret
@@ -148,16 +159,7 @@ endp
 ; Destr: si, bx
 ;-------------------------------------------------------
 atoi        proc
-    ;-----skipping spaces-----
-        push es                 ; saving es
-
-        mov bx, ds
-        mov es, bx              ; es = ds (for skipSpaces)
-
-        xchg di, si             ; SkipSpaces needs string tp be in es:di
         call SkipSpaces         ; skipping spaces -_-
-        xchg di, si
-    ;-------------------------
 
         push ax                 ; saving ax
 
@@ -179,7 +181,6 @@ atoi        proc
         dec si
 
         pop ax                  ; restoring ax
-        pop es                  ; restoring es
 
         ret
 endp
@@ -193,16 +194,7 @@ endp
 ; Destr: si, bx
 ;-------------------------------------------------------
 atoi_hex    proc
-    ;-----skipping spaces-----
-        push es                     ; saving es
-
-        mov bx, ds
-        mov es, bx                  ; es = ds (for skipSpaces)
-
-        xchg di, si
         call SkipSpaces             ; skipping spaces -_-
-        xchg di, si
-    ;-------------------------
 
         push ax                     ; saving ax
 
@@ -233,7 +225,6 @@ atoi_hex    proc
         dec si
 
         pop ax                      ; restoring ax
-        pop es                      ; restoring es
 
         ret
 endp
@@ -241,17 +232,30 @@ endp
 ;-------------------------------------------------------
 ; Points si to the first non-space symbol
 ; Entry:
-;   es:di = str_addr
+;   ds:si = str_addr
 ; Exit:
-;   es:di = first non-space symbol
-; Destr: di, al
+;   ds:si = first non-space symbol
+; Destr: di
 ;-------------------------------------------------------
 SkipSpaces  proc
-        mov al, ' '
 
-        repe scasb
+; --- old version (needed es:di for str addr) ---
+;         mov al, ' '
+;
+;         repe scasb
+;
+;         dec di
+; --- --------------------------------------- ---
 
-        dec di
+    skip_loop_start:
+        cmp byte ptr ds:[si], ' '           ; if str[si] != space
+        jne skip_loop_end                   ; then ending
+
+        inc si                              ; else si++
+
+        jmp skip_loop_start
+
+    skip_loop_end:
 
         ret
 endp
