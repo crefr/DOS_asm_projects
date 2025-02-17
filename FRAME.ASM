@@ -55,22 +55,20 @@ Start:
         mov di, si                      ; di = str addr
         call StrLen                     ; cx = len of str
 
-        add cx, 4
+        add cl, 4
+        cmp dl, cl
+        ja no_inc_width                 ; if dl <= str_len + 4
+        mov dl, cl                      ; dl = str_len + 4
 
-        cmp dl, 2
-        ja draw_cycle
-
-        mov dl, 2
+    no_inc_width:                       ; else
+        sub cl, 4
 
     draw_cycle:
-
-        push cx                         ; saving len of str
-        push bx
-        push si
+        push cx
         call DrawCard                   ; drawing
-        pop si
-        pop bx
-        pop cx                          ; restoring len of str
+        pop cx
+
+        sub bx, 9                       ; returning old bx
 
         inc dl
 
@@ -91,28 +89,28 @@ Start:
 ;   si = string addr
 ;   es = video seg
 ; Exit: None
-; Destr: cx, di, ax(al)
+; Destr: cx, di, ax(al), bx
 ;-------------------------------------------------------
 DrawCard proc
+    push cx
+
     ; drawing borders
-    push dx
     call FindCorner
     call DrawBorders
 
-    ; printing text
-    mov di, si
-    call StrLen             ; cx = strlen(di)
+    pop cx
 
-    mov dl, cl              ; dl = cx (up to 255)
+    ; printing text
+    mov dl, cl              ; dl = str_len (up to 255)
     mov dh, 1               ; height of 1 line is 1
 
     mov bx, cx
     call FindCorner
     mov cx, bx
 
+    push si
     call PrintLine
-
-    pop dx
+    pop si
 
     ret
 endp
