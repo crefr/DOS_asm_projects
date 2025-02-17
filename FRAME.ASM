@@ -45,6 +45,8 @@
 org 100h
 
 Start:
+        cld
+
         mov si, 81h                     ; start of the args str
 
         mov bx, VIDEO
@@ -55,28 +57,75 @@ Start:
         mov di, si                      ; di = str addr
         call StrLen                     ; cx = len of str
 
-        add cl, 4
-        cmp dl, cl
-        ja no_inc_width                 ; if dl <= str_len + 4
-        mov dl, cl                      ; dl = str_len + 4
-
-    no_inc_width:                       ; else
-        sub cl, 4
-
-    draw_cycle:
-        push cx
-        call DrawCard                   ; drawing
-        pop cx
-
-        sub bx, 9                       ; returning old bx
-
-        inc dl
-
-        cmp dl, cl                      ; if width <= str_len
-        jbe draw_cycle                  ; then cycling
+        call DrawRollingCard            ; drawing
 
         mov ax, 4c00h                   ; DOS Fn 4c = exit(al)
         int 21h
+
+;-------------------------------------------------------
+; Draws a card with text and borders of style from array but it extends from 0 to target
+; Entry:
+;   ah = color
+;   bx = style[9] addr
+;   dl = width
+;   dh = height
+;   si = string addr
+;   es = video seg
+; Exit: None
+; Destr: cx, di, ax(al), bx
+;-------------------------------------------------------
+DrawRollingCard proc
+        push cx
+
+        mov cl, dl
+        mov dl, 2
+
+    draw_cycle:
+        ; drawing borders
+        push cx
+        push dx
+
+        call FindCorner
+        call DrawBorders
+
+    ;--- waiting for 16 ms ---
+        mov dh, ah
+        mov ah, 86h
+
+        xor cx, cx
+        mov dx, 1000h                   ; 16 ms wait
+        int 15h
+
+        mov ah, dh
+    ;--- waiting for 16 ms ---
+
+        pop dx
+        pop cx
+
+        sub bx, 6                       ; returning old bx
+
+        inc dl
+
+        cmp dl, cl
+        jb draw_cycle
+
+        pop cx
+
+        ; printing text
+        mov dl, cl              ; dl = str_len (up to 255)
+        mov dh, 1               ; height of 1 line is 1
+
+        mov bx, cx
+        call FindCorner
+        mov cx, bx
+
+        push si
+        call PrintLine
+        pop si
+
+        ret
+endp
+
 
 ;-------------------------------------------------------
 ; Draws a card with text and borders of style from array
@@ -89,30 +138,30 @@ Start:
 ;   si = string addr
 ;   es = video seg
 ; Exit: None
-; Destr: cx, di, ax(al), bx
+; Destr: cx, di, ax(al), bx, dx
 ;-------------------------------------------------------
 DrawCard proc
-    push cx
+        push cx
 
-    ; drawing borders
-    call FindCorner
-    call DrawBorders
+        ; drawing borders
+        call FindCorner
+        call DrawBorders
 
-    pop cx
+        pop cx
 
-    ; printing text
-    mov dl, cl              ; dl = str_len (up to 255)
-    mov dh, 1               ; height of 1 line is 1
+        ; printing text
+        mov dl, cl              ; dl = str_len (up to 255)
+        mov dh, 1               ; height of 1 line is 1
 
-    mov bx, cx
-    call FindCorner
-    mov cx, bx
+        mov bx, cx
+        call FindCorner
+        mov cx, bx
 
-    push si
-    call PrintLine
-    pop si
+        push si
+        call PrintLine
+        pop si
 
-    ret
+        ret
 endp
 
 ;-------------------------------------------------------
@@ -391,7 +440,6 @@ DrawBorders   proc
     ; Drawing first line
         mov cl, dl                      ; cx  = width
         call DrawLine
-
 
         add bx, 3
         sub dh, 2                       ; dh -= 2 (not the last and the first)
