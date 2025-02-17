@@ -1,6 +1,7 @@
 .model tiny
 .286
 
+;================================================
 .data
     STR_END     equ 0Dh
 
@@ -23,7 +24,7 @@
             db '123456789'
 
             ; style 5
-            db  '/-\| |\-/'
+            db '/-\| |\-/'
 
             ; style 6
             db '|-|x x|-|'
@@ -37,9 +38,9 @@
     VIDEO       equ 0b800h          ;video segment addr
     WID         equ 80
     HEIT        equ 25
+;================================================
 
-    ; COLOR       equ 0C3h
-
+;================================================
 .code
 org 100h
 
@@ -51,7 +52,30 @@ Start:
 
         call ParseArgs                  ; getting args
 
-        call DrawCard
+        mov di, si                      ; di = str addr
+        call StrLen                     ; cx = len of str
+
+        add cx, 4
+
+        cmp dl, 2
+        ja draw_cycle
+
+        mov dl, 2
+
+    draw_cycle:
+
+        push cx                         ; saving len of str
+        push bx
+        push si
+        call DrawCard                   ; drawing
+        pop si
+        pop bx
+        pop cx                          ; restoring len of str
+
+        inc dl
+
+        cmp dl, cl                      ; if width <= str_len
+        jbe draw_cycle                  ; then cycling
 
         mov ax, 4c00h                   ; DOS Fn 4c = exit(al)
         int 21h
@@ -71,11 +95,11 @@ Start:
 ;-------------------------------------------------------
 DrawCard proc
     ; drawing borders
+    push dx
     call FindCorner
     call DrawBorders
 
     ; printing text
-
     mov di, si
     call StrLen             ; cx = strlen(di)
 
@@ -87,6 +111,8 @@ DrawCard proc
     mov cx, bx
 
     call PrintLine
+
+    pop dx
 
     ret
 endp
@@ -370,7 +396,7 @@ DrawBorders   proc
 
 
         add bx, 3
-        sub dh, 2                       ; dh -= 2 (not the last an the first)
+        sub dh, 2                       ; dh -= 2 (not the last and the first)
     ; Drawing mid lines
     border_middle:
         add di, WID * 2                 ; next line
@@ -423,3 +449,4 @@ endp
 
 
 end     Start
+;================================================
