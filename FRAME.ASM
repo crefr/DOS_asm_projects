@@ -1,6 +1,8 @@
 .model tiny
 .286
 
+local @@
+
 ;================================================
 .data
     STR_END     equ 0Dh
@@ -72,7 +74,7 @@ Start:
 ;   si = string addr
 ;   es = video seg
 ; Exit: None
-; Destr: cx, di, ax(al), bx
+; Destr: cx, di, ax(al), bx, dx
 ;-------------------------------------------------------
 DrawRollingCard proc
         push cx
@@ -89,14 +91,14 @@ DrawRollingCard proc
         call DrawBorders
 
     ;--- waiting for 16 ms ---
-        mov dh, ah
+        push ax
         mov ah, 86h
 
         xor cx, cx
-        mov dx, 1000h                   ; 16 ms wait
+        mov dx, 0A000h                   ; 16 ms wait
         int 15h
 
-        mov ah, dh
+        pop ax
     ;--- waiting for 16 ms ---
 
         pop dx
@@ -134,11 +136,10 @@ endp
 ;   bx = style[9] addr
 ;   dl = width
 ;   dh = height
-;   di = video mem start
 ;   si = string addr
 ;   es = video seg
 ; Exit: None
-; Destr: cx, di, ax(al), bx, dx
+; Destr: cx, di, al, bx, dx
 ;-------------------------------------------------------
 DrawCard proc
         push cx
@@ -238,19 +239,19 @@ atoi        proc
 
         xor ah, ah              ; ax = al
         xor bx, bx
-    atoi_loop_start:
+    @@atoi_loop_start:
         lodsb                   ; al = string[ds:si]; si++
         sub al, '0'
 
         cmp al, 9
-        ja atoi_loop_end
+        ja @@atoi_loop_end
 
         imul bx, bx, 10
         add bx, ax
 
-        jmp atoi_loop_start
+        jmp @@atoi_loop_start
 
-    atoi_loop_end:
+    @@atoi_loop_end:
         dec si
 
         pop ax                  ; restoring ax
@@ -272,29 +273,29 @@ atoi_hex    proc
         push ax                     ; saving ax
 
         xor ah, ah                  ; ax = al
-        xor bx, bx
-    atoi_hex_loop_start:
+        xor bx, bx                  ; bx = 0
+    @@atoi_hex_loop_start:
         lodsb                       ; al = string[ds:si]; si++
         sub al, '0'
 
         cmp al, 9                   ; if scanned char is between '0' and '9'
-        jbe atoi_hex_scanned_digit  ; then adding it to answer
+        jbe @@atoi_hex_scanned_digit  ; then adding it to answer
 
     ; --- trying letters (a - f) ---
         sub al, 'a' - '0'
 
         cmp al, 5                   ; if scanned char is not between 'a' and 'f'
-        ja atoi_hex_loop_end        ; then ending
+        ja @@atoi_hex_loop_end        ; then ending
 
         add ax, 10
 
-    atoi_hex_scanned_digit:
+    @@atoi_hex_scanned_digit:
         shl bx, 4                   ; bx *= 16
         add bx, ax
 
-        jmp atoi_hex_loop_start
+        jmp @@atoi_hex_loop_start
 
-    atoi_hex_loop_end:
+    @@atoi_hex_loop_end:
         dec si
 
         pop ax                      ; restoring ax
