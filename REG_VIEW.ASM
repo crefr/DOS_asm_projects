@@ -46,6 +46,7 @@ Start:
 
 ; -------------------------------------------------------------------
 ; Resident part of the program
+; Handles 09h
 ; -------------------------------------------------------------------
 Resident proc
         pusha
@@ -55,18 +56,27 @@ Resident proc
         push cs
         pop ds
 
+        in al, 60h
+
+        cmp al, KEY_CODE            ; if al != KEY_CODE
+        jne @@wrong_key             ; ending int
+                                    ; else
         mov bx, VIDEOSEG
         mov es, bx
+
+        mov ah, COLOR               ; color byte
 
         mov di, FRAME_START
         mov bx, offset STYLE
         mov dl, FRAME_WID
         mov dh, FRAME_HEIT
 
-        mov ah, COLOR               ; color byte
-        in al, 60h
         call DrawBorders
 
+        mov di, REG_START
+        call DrawHex
+
+    @@wrong_key:
         mov al, 20h
         out 20h, al
 
@@ -125,6 +135,46 @@ DrawBorders   proc
         ret
 endp
 
+
+;-------------------------------------------------------
+; Draws a 16-bit hex number on the screen
+; Entry:
+;   es:di = addr of print start
+;   ah    = color byte
+;   dx    = number to print
+; Exit: None
+; Destr: dx cx al
+;-------------------------------------------------------
+DrawHex     proc
+        add di, 3 * 2               ; going to the end of the string
+        mov cx, 4                   ; 16-bit is 4 hex digits
+
+        std                         ; we are going backwards with this
+
+    @@loop_start:
+        mov al, dl
+        and al, 0Fh
+
+        cmp al, 10                  ; if al >= 10
+        jae @@draw_letter           ; it is hex letter
+                                    ; else it is a number
+        add al, '0'
+        jmp @@ending_iteration
+
+    @@draw_letter:
+        add al, 'a' - 10
+
+    @@ending_iteration:
+        stosw
+        shr dx, 4                   ; shifting half of a byte
+
+        loop @@loop_start
+
+        cld                         ; clearing dest flag
+
+        ret
+endp
+
 ;-------------------------------------------------------
 ; Draws a line of symbols of style from array
 ; Entry:
@@ -169,6 +219,9 @@ endp
     FRAME_HEIT  equ 10
 
     FRAME_START equ WID*1*2 + (WID - FRAME_WID - 1)*2
+    REG_START   equ FRAME_START + WID*2 + 2
+
+    KEY_CODE    equ 58h             ; F12 scan code
 
 ; label to calculate the size
 EOP:
