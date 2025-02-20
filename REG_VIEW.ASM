@@ -52,15 +52,23 @@ Resident proc
         pusha
         push es
         push ds
+    ; now in stack: ax cx dx bx sp bp si di es ds
+    ;                                             ^sp
+
+        mov bp, sp
+        add bp, 9 * 2               ; preparing bp for PrintRegs
 
         push cs
         pop ds
 
         in al, 60h
 
+    ; ---------------------------------------------------
         cmp al, KEY_CODE            ; if al != KEY_CODE
         jne @@wrong_key             ; ending int
                                     ; else
+
+            ; push dx
         mov bx, VIDEOSEG
         mov es, bx
 
@@ -73,8 +81,11 @@ Resident proc
 
         call DrawBorders
 
+            ; pop dx
         mov di, REG_START
-        call DrawHex
+        call PrintRegs
+    ; ---------------------------------------------------
+
 
     @@wrong_key:
         mov al, 20h
@@ -91,6 +102,34 @@ Resident proc
 endp
 ; -------------------------------------------------------------------
 
+
+;-------------------------------------------------------
+; Prints all registers from stack
+; Entry:
+;   es:di = addr of print start
+;   ss:bp = addr of ax register
+;           (order is ax cx dx bx si di es ds)
+;   ah    = color byte
+; Exit: None
+; Destr: dx cx al bp
+;-------------------------------------------------------
+PrintRegs   proc
+        mov cx, 8               ; cx = num of registers
+
+    @@reg_loop:
+        mov dx, ss:[bp]
+
+            push cx
+        call DrawHex
+            pop cx
+
+        add di, WID*2           ; next line
+        sub bp, 2               ; next register in stack
+
+        loop @@reg_loop
+
+        ret
+endp
 
 ;-------------------------------------------------------
 ; Draws a frame of symbols of style from array
@@ -171,6 +210,8 @@ DrawHex     proc
         loop @@loop_start
 
         cld                         ; clearing dest flag
+
+        add di, 2                   ; restoring di
 
         ret
 endp
