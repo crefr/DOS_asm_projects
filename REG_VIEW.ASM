@@ -1,7 +1,7 @@
 .model tiny
 .286
 
-local @@
+locals @@
 
 .code
 org 100h
@@ -9,9 +9,56 @@ org 100h
 Start:
         xor ax, ax
         mov es, ax
-        mov bx, 09h * 4                 ; addr in interrupt in table
 
-        ; int 09h                         ; calling old handler
+        call Init_09h_int
+        call Init_08h_int
+
+        ; --- ending, keeping as resident ---
+        mov ax, 3100h
+        mov dx, offset EOP              ; size of the program
+        shr dx, 4                       ; size /= 16;
+        inc dx                          ; size++
+
+        int 21h                         ; DOS Fn 31h = TSR
+        ; -----------------------------------
+
+; -------------------------------------------------------------------
+; Initialises 08h interruption
+; Entry:
+;   es = 0
+; -------------------------------------------------------------------
+Init_08h_int    proc
+        mov bx, 08h * 4                     ; addr in interrupt in table
+
+        ; --- saving old handler addr ---
+        mov ax, es:[bx]
+        mov Old_08h_HandlerOff, ax
+
+        mov ax, es:[bx + 2]
+        mov Old_08h_HandlerSeg, ax
+        ; -------------------------------
+
+
+        ; --- editing int table ---
+        cli
+        mov es:[bx], offset Resident_08h    ; writing offset to the table
+
+        mov ax, cs
+        mov es:[bx + 2], ax                 ; writing segment to the table
+
+        sti
+        ; -------------------------
+
+        ret
+endp
+
+; -------------------------------------------------------------------
+; Initialises 09h interruption
+; Entry:
+;   es = 0
+; -------------------------------------------------------------------
+Init_09h_int    proc
+        mov bx, 09h * 4                     ; addr in interrupt in table
 
         ; --- saving old handler addr ---
         mov ax, es:[bx]
@@ -24,51 +71,44 @@ Start:
 
         ; --- editing int table ---
         cli
-        mov es:[bx], offset Resident    ; writing offset to the table
+
+        mov es:[bx], offset Resident_09h    ; writing offset to the table
 
         mov ax, cs
-        mov es:[bx + 2], ax             ; writing segment to the table
+        mov es:[bx + 2], ax                 ; writing segment to the table
 
         sti
         ; -------------------------
 
-        ; int 09h                         ; calling our handler
-
-        ; --- ending, keeping as resident ---
-        mov ax, 3100h
-        mov dx, offset EOP              ; size of the program
-        shr dx, 4                       ; size /= 16;
-        inc dx                          ; size++
-
-        int 21h                         ; DOS Fn 31h = TSR
-        ; -----------------------------------
-
+        ret
+endp
 
 ; -------------------------------------------------------------------
 ; Resident part of the program
-; Handles 09h
+; Drawing frame with registers if program is active
 ; -------------------------------------------------------------------
-Resident proc
+Resident_08h    proc
+        pushf
+
+        db 9ah                      ; calling old int 08h handler
+    Old_08h_HandlerOff      dw 0
+    Old_08h_HandlerSeg      dw 0
+
         pusha
         push es
         push ds
     ; now in stack: ax cx dx bx sp bp si di es ds
-    ;                                             ^sp
-
+    ;                                           ^sp
         mov bp, sp
         add bp, 9 * 2               ; preparing bp for PrintRegs
 
         push cs
-        pop ds
-
-        in al, 60h
+        pop ds                      ; ds = cs
 
     ; ---------------------------------------------------
-        cmp al, KEY_CODE            ; if al != KEY_CODE
-        jne @@wrong_key             ; ending int
+        cmp active, 0
+        je @@ending_int             ; ending int
                                     ; else
-
-            ; push dx
         mov bx, VIDEOSEG
         mov es, bx
 
@@ -81,19 +121,39 @@ Resident proc
 
         call DrawBorders
 
-            ; pop dx
         mov di, REG_START
         call PrintRegs
     ; ---------------------------------------------------
 
-
-    @@wrong_key:
-        mov al, 20h
-        out 20h, al
-
+    @@ending_int:
         pop ds
         pop es
         popa
+
+        iret                        ; ending int
+endp
+; -------------------------------------------------------------------
+
+; -------------------------------------------------------------------
+; Resident part of the program
+; Checks if key was pushed for program to be active
+; -------------------------------------------------------------------
+Resident_09h    proc
+        push ax
+        push ds
+
+        push cs
+        pop ds
+
+        in al, 60h
+        cmp al, KEY_CODE
+        jne @@ending_int
+
+        not active                  ; active = FFh if was 0 and opposite
+
+    @@ending_int:
+        pop ds
+        pop ax
 
         ; jumping to the old handler
                         db 0eah
@@ -154,7 +214,7 @@ DrawBorders   proc
         sub dh, 2                       ; dh -= 2 (not the last and the first)
 
     ; Drawing mid lines
-    border_middle:
+    @@border_middle:
         add di, WID * 2                 ; next line
 
         mov cl, dl                      ; cx  = width
@@ -162,7 +222,7 @@ DrawBorders   proc
 
         dec dh
         cmp dh, 0
-        ja border_middle
+        ja @@border_middle
 
     ; Drawing last line
         add di, WID * 2
@@ -201,7 +261,7 @@ DrawHex     proc
         jmp @@ending_iteration
 
     @@draw_letter:
-        add al, 'a' - 10
+        add al, 'A' - 10
 
     @@ending_iteration:
         stosw
@@ -263,6 +323,8 @@ endp
     REG_START   equ FRAME_START + WID*2 + 2
 
     KEY_CODE    equ 58h             ; F12 scan code
+
+    active      db 0
 
 ; label to calculate the size
 EOP:
