@@ -94,21 +94,25 @@ Resident_08h    proc
     Old_08h_HandlerOff      dw 0
     Old_08h_HandlerSeg      dw 0
 
+        cmp cs:active, 0
+        jne @@is_active
+
+        iret
+
+    ;----------------------------------------------------
+    @@is_active:
         pusha
         push es
         push ds
     ; now in stack: ax cx dx bx sp bp si di es ds
     ;                                           ^sp
         mov bp, sp
-        add bp, 9 * 2               ; preparing bp for PrintRegs
+        add bp, 9 * 2               ; preparing bp for PrintRegValues
 
         push cs
         pop ds                      ; ds = cs
 
     ; ---------------------------------------------------
-        cmp active, 0
-        je @@ending_int             ; ending int
-                                    ; else
         mov bx, VIDEOSEG
         mov es, bx
 
@@ -122,10 +126,13 @@ Resident_08h    proc
         call DrawBorders
 
         mov di, REG_START
-        call PrintRegs
+        mov si, offset reg_names
+        call PrintRegNames
+
+        mov di, REG_START + 4*2
+        call PrintRegValues
     ; ---------------------------------------------------
 
-    @@ending_int:
         pop ds
         pop es
         popa
@@ -168,13 +175,13 @@ endp
 ; Entry:
 ;   es:di = addr of print start
 ;   ss:bp = addr of ax register
-;           (order is ax cx dx bx si di es ds)
+;           (order (cs ip) ax cx dx bx si di es ds)
 ;   ah    = color byte
 ; Exit: None
 ; Destr: dx cx al bp
 ;-------------------------------------------------------
-PrintRegs   proc
-        mov cx, 8               ; cx = num of registers
+PrintRegValues   proc
+        mov cx, REG_NUM - 2         ; cx = num of registers (without cs and ip)
 
     @@reg_loop:
         mov dx, ss:[bp]
@@ -183,13 +190,52 @@ PrintRegs   proc
         call DrawHex
             pop cx
 
-        add di, WID*2           ; next line
-        sub bp, 2               ; next register in stack
+        add di, WID*2               ; next line
+        sub bp, 2                   ; next register in stack
+
+        loop @@reg_loop
+
+        ; printing cs and ip:
+        add bp, REG_NUM * 2     ; returning to cs
+
+        mov dx, ss:[bp]
+        call DrawHex
+
+        add di, WID*2
+        sub bp, 2
+
+        mov dx, ss:[bp]
+        call DrawHex
+
+        ret
+endp
+
+;-------------------------------------------------------
+; Prints all registers names from reg_names array in order ax cx dx bx si di es ds
+; Entry:
+;   ds:si = addr of name array start
+;   es:di = addr of print start
+;   ah    = color byte
+; Exit: None
+; Destr: al, di, cx
+;-------------------------------------------------------
+PrintRegNames   proc
+        mov cx, REG_NUM
+
+    @@reg_loop:
+        lodsb
+        stosw                   ; the first symbol
+
+        lodsb
+        stosw                   ; the second
+
+        add di, (WID - 2)*2     ; to the next line
 
         loop @@reg_loop
 
         ret
 endp
+
 
 ;-------------------------------------------------------
 ; Draws a frame of symbols of style from array
@@ -306,6 +352,8 @@ DrawLine    proc
 endp
 
 .data
+    REG_NUM     equ 12
+
     STYLE:  db  218, 196, 191
             db  179, ' ', 179
             db  192, 196, 217
@@ -317,12 +365,28 @@ endp
     COLOR       equ 4eh
 
     FRAME_WID   equ 10
-    FRAME_HEIT  equ 10
+    FRAME_HEIT  equ REG_NUM + 2
 
     FRAME_START equ WID*1*2 + (WID - FRAME_WID - 1)*2
     REG_START   equ FRAME_START + WID*2 + 2
 
     KEY_CODE    equ 58h             ; F12 scan code
+
+
+    ; names of regs in order which they will be printed
+    reg_names   db  'ax'
+                db  'cx'
+                db  'dx'
+                db  'bx'
+                db  'sp'
+                db  'bp'
+                db  'si'
+                db  'di'
+                db  'es'
+                db  'ds'
+                db  'cs'
+                db  'ip'
+
 
     active      db 0
 
