@@ -88,16 +88,17 @@ endp
 ; Drawing frame with registers if program is active
 ; -------------------------------------------------------------------
 Resident_08h    proc
-        pushf
-
-        db 9ah                      ; calling old int 08h handler
-    Old_08h_HandlerOff      dw 0
-    Old_08h_HandlerSeg      dw 0
+;         pushf
+;
+;         db 9ah                      ; calling old int 08h handler
+;     Old_08h_HandlerOff      dw 0
+;     Old_08h_HandlerSeg      dw 0
 
         cmp cs:active, 0
         jne @@is_active
 
-        iret
+;         iret
+        jmp @@end_int
 
     ;----------------------------------------------------
     @@is_active:
@@ -137,7 +138,11 @@ Resident_08h    proc
         pop es
         popa
 
-        iret                        ; ending int
+    @@end_int:
+        db 0eah                         ; jumping to old 08h handler
+    Old_08h_HandlerOff      dw 0
+    Old_08h_HandlerSeg      dw 0
+        ; iret                        ; ending int
 endp
 ; -------------------------------------------------------------------
 
