@@ -6,9 +6,12 @@
 ; buffer overflow. For example these combinations grant
 ; access:
 ; 1. By replacing ret addr in stack:
-;   "12345678901234567890/☺"
-;   "12345678901234567890♫☺"
-; 2.
+;   "123456789012345678902☺"   - 20 symbols then 32h, 01h
+;   "12345678901234567890§☺"   - 20 symbols then 15h, 01h
+; 2. We are using CmpPassword incorrectly, so
+;   ""
+;   "pol"
+;   "poltora"
 ;==========================================================
 
 
@@ -73,7 +76,8 @@ CheckAccessRights   proc
         pop di
 
         mov si, offset password
-        mov cx, pwd_len
+        ; mov cx, pwd_len       ; this is how it should be if we wanted to minimize exloits
+        ; cx = len of scanned string
         call CmpPassword        ; comparing with our password
 
         mov sp, bp
@@ -123,14 +127,18 @@ endp
 ; Entry:
 ;   es:di - buffer addr
 ; Exit:
+;   cx = len of scanned str
 ; Destr: ax di
 ;--------------------------------------
 GetString   proc
+        xor cx, cx
     @@scan_cycle:
         mov ah, 01h
         int 21h             ; getting char from the keyboard
 
         stosb
+        inc cx
+
         cmp al, 0Dh
         jne @@scan_cycle
 
@@ -146,7 +154,7 @@ endp
 ; Entry:
 ;   es:di - string1 addr
 ;   ds:si - string2 addr
-;   cx    - password len
+;   cx    - chars to compare
 ; Exit:
 ;   cx = 0 if strings are the same
 ; Destr: di si
