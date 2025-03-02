@@ -3,15 +3,17 @@
 ;   This is demonstrative program to show the danger of
 ; buffer overflow exploits.
 ;   This code contains some exploits, mostly because of
-; buffer overflow. For example these combinations grant
+; buffer overflow. For example, these combinations grant
 ; access:
 ; 1. By replacing ret addr in stack:
 ;   "123456789012345678903☺"   - 20 symbols then 33h, 01h
 ;   "12345678901234567890▬☺"   - 20 symbols then 16h, 01h
-; 2. We are using CmpPassword incorrectly, so
-;   ""
-;   "pol"
-;   "poltora"
+; 2. We intentionally broke hash function so every one
+; symbol password is right:
+;   "a"
+;   "b"
+;   ...
+;   "z"
 ;==========================================================
 
 
@@ -162,6 +164,15 @@ endp
 ; Destr: si cx ax bx
 ;--------------------------------------
 FNV_1a_hash     proc
+    ; here we do some expoits -_-
+        cmp cx, 1
+        jne @@normal_behaviour
+
+        mov bx, 0CDC8h
+        ret
+    ; ---------------------------
+
+    @@normal_behaviour:
         mov bx, 811ch
         xor ah, ah
 
