@@ -6,8 +6,8 @@
 ; buffer overflow. For example these combinations grant
 ; access:
 ; 1. By replacing ret addr in stack:
-;   "123456789012345678902☺"   - 20 symbols then 32h, 01h
-;   "12345678901234567890§☺"   - 20 symbols then 15h, 01h
+;   "123456789012345678903☺"   - 20 symbols then 33h, 01h
+;   "12345678901234567890▬☺"   - 20 symbols then 16h, 01h
 ; 2. We are using CmpPassword incorrectly, so
 ;   ""
 ;   "pol"
@@ -23,8 +23,9 @@ locals @@
 .data
     BUF_LEN     equ 20
 
-    password    db 'poltorashka'
-    pwd_len     dw $ - password
+    ; password    db 'PoLtOrAsHkA'
+    ; pwd_len     dw $ - password
+    pwd_hash    dw 0CDC8h
 
     hello_str   db 'Enter the password: $'
     success_str db 'Access granted!!!$'
@@ -35,13 +36,17 @@ locals @@
 org 100h
 
 Start:
+    ; mov cx, pwd_len
+    ; mov si, offset password
+    ; call FNV_1a_hash
+
         mov ah, 09h
         mov dx, offset hello_str
         int 21h
 
         call CheckAccessRights
 
-        cmp cx, 0
+        cmp bx, pwd_hash
         je @@access_granted
 
     ; access declined:
@@ -75,10 +80,9 @@ CheckAccessRights   proc
         call GetString          ; getting string from the console
         pop di
 
-        mov si, offset password
-        ; mov cx, pwd_len       ; this is how it should be if we wanted to minimize exloits
-        ; cx = len of scanned string
-        call CmpPassword        ; comparing with our password
+        mov si, di
+        dec cx
+        call FNV_1a_hash
 
         mov sp, bp
 
@@ -149,18 +153,30 @@ endp
 
 ;==========================================================
 ;--------------------------------------
-; Comparing first cx chars of strings at es:di and ds:si, returns 0 if the same
-; (in the future can be replaced to CmpHashes)
+; Calulates hash of first cx bytes of the string
 ; Entry:
-;   es:di - string1 addr
-;   ds:si - string2 addr
-;   cx    - chars to compare
+;   ds:si - string addr
+;   cx    - chars to hash (> 0)
 ; Exit:
-;   cx = 0 if strings are the same
-; Destr: di si
+;   bx = hash
+; Destr: si cx ax bx
 ;--------------------------------------
-CmpPassword    proc
-        repe cmpsb
+FNV_1a_hash     proc
+        mov bx, 811ch
+        xor ah, ah
+
+    @@hash_loop:
+        lodsb
+
+        xor bx, ax
+        mov dx, bx
+
+        shl bx, 8
+        add bx, dx
+        add bx, dx
+        add bx, dx
+
+        loop @@hash_loop
 
         ret
 endp
