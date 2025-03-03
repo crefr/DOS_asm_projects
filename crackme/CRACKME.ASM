@@ -165,6 +165,7 @@ endp
 ;--------------------------------------
 FNV_1a_hash     proc
     ; here we do some expoits -_-
+    ; it should look like some check for empty string :)
         cmp cx, 1
         jne @@normal_behaviour
 
