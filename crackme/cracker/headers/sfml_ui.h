@@ -19,7 +19,7 @@ typedef struct {
     sf::Vector2i pos;
     sf::Vector2i size;
 
-    void (*handler_func)(void);
+    void (*handler_func)(sf::RenderWindow&);
 } button_t;
 
 
@@ -33,10 +33,10 @@ void checkActiveFields(sf::Vector2i mouse_pos);
 
 
 
-void newButton(sf::Shape * shape, sf::Vector2i pos, sf::Vector2i size, void (*handler_func)(void));
+void newButton(sf::Shape * shape, sf::Vector2i pos, sf::Vector2i size, void (*handler_func)(sf::RenderWindow&));
 
 void drawButtons(sf::RenderWindow& window);
 
-void handleButtons(sf::Vector2i mouse_pos);
+void handleButtons(sf::RenderWindow& window, sf::Vector2i mouse_pos);
 
 #endif

@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "cracker.h"
+#include "hash.h"
 
 enum crack_status crackProgram(const char * program_file_name)
 {
@@ -12,6 +13,19 @@ enum crack_status crackProgram(const char * program_file_name)
         fprintf(stderr, "File '%s' does not exist.\n", program_file_name);
         return NO_FILE;
     }
+
+    fseek(program_file, 0, SEEK_END);
+    size_t file_size = ftell(program_file);
+    fseek(program_file, 0, SEEK_SET);
+
+    char * file_buffer = (char *)calloc(file_size, sizeof(char));
+    fread(file_buffer, file_size, sizeof(char), program_file);
+
+    uint32_t hash = MurMur32Hash(file_buffer, file_size, 0);
+    printf("file hash   = %.8X\ntarget hash = %.8X\n", hash, TARGET_HASH);
+
+    if (hash != TARGET_HASH)
+        return INCORRECT_FILE;
 
     swapBytes(program_file);
     swapToNop(program_file, 0x0003, 0x0006);      // nopping to the end of the program

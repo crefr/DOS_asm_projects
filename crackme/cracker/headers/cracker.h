@@ -1,6 +1,8 @@
 #ifndef CRACKER_INCLUDED
 #define CRACKER_INCLUDED
 
+#include <stdint.h>
+
 enum crack_status {
     SUCCESS = 0,
     NO_FILE = 1,
@@ -16,6 +18,8 @@ const byte_swap_t swap_table[] = {
     {.addr = 0x0001, .new_byte = 0x5C}          // call TakePassword -> call AccessGranted
 };
 const size_t swap_table_size = sizeof(swap_table) / sizeof(swap_table[0]);
+
+const uint32_t TARGET_HASH = 0x87D1AA8E;
 
 enum crack_status crackProgram(const char * program_file_name);
 

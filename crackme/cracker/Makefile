@@ -39,12 +39,12 @@ endif
 
 CFLAGS := -I./$(HEADDIR) $(CFLAGS)
 
-ALLDEPS = $(HEADDIR)cracker.h $(HEADDIR)window_handler.h $(HEADDIR)sfml_ui.h
-OBJECTS = main.o cracker.o window_handler.o sfml_ui.o
+ALLDEPS = $(HEADDIR)cracker.h $(HEADDIR)window_handler.h $(HEADDIR)sfml_ui.h $(HEADDIR)hash.h
+OBJECTS = main.o cracker.o window_handler.o sfml_ui.o hash.o
 OBJECTS_WITH_DIR 	 = $(addprefix $(OBJDIR),$(OBJECTS))
 
 $(FILENAME): $(OBJECTS_WITH_DIR) $(BINTREE_OBJ_WITH_DIR) $(TREELIB) $(TABLELIB)
-	$(CC) $(CFLAGS) $^ -o $@ -lsfml-graphics -lsfml-window -lsfml-system
+	$(CC) $(CFLAGS) $^ -o $@ -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio
 
 $(OBJECTS_WITH_DIR): $(OBJDIR)%.o: $(SRCDIR)%.cpp $(ALLDEPS)
 	mkdir -p $(OBJDIR)

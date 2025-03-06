@@ -87,7 +87,7 @@ void checkActiveFields(sf::Vector2i mouse_pos)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void newButton(sf::Shape * shape, sf::Vector2i pos, sf::Vector2i size, void (*handler_func)(void))
+void newButton(sf::Shape * shape, sf::Vector2i pos, sf::Vector2i size, void (*handler_func)(sf::RenderWindow&))
 {
     button_t * button = &(buttons[button_num]);
 
@@ -108,14 +108,14 @@ void drawButtons(sf::RenderWindow& window)
     }
 }
 
-void handleButtons(sf::Vector2i mouse_pos)
+void handleButtons(sf::RenderWindow& window, sf::Vector2i mouse_pos)
 {
     for (size_t but_index = 0; but_index < button_num; but_index++){
         sf::Vector2i rel_pos = mouse_pos - buttons[but_index].pos;
 
         if ((0 <= rel_pos.x &&  rel_pos.x <= buttons[but_index].size.x)
          && (0 <= rel_pos.y &&  rel_pos.y <= buttons[but_index].size.y)){
-            buttons[but_index].handler_func();
+            buttons[but_index].handler_func(window);
         }
     }
 }
