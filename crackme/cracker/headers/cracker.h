@@ -7,7 +7,7 @@ typedef struct {
 } byte_swap_t;
 
 const byte_swap_t swap_table[] = {
-    {.addr = 0x0008, .new_byte = 0x29}          // call CheckAccessRights -> call AccessGranted
+    {.addr = 0x0001, .new_byte = 0x5C}          // call TakePassword -> call AccessGranted
 };
 const size_t swap_table_size = sizeof(swap_table) / sizeof(swap_table[0]);
 

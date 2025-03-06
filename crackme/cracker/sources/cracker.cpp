@@ -9,7 +9,7 @@ extern FILE * G_program_file;
 void crackProgram(void)
 {
     swapBytes(G_program_file);
-    swapToNop(G_program_file, 0x000A, 0x0019);
+    swapToNop(G_program_file, 0x0003, 0x0006);      // nopping to the end of the program
 
     printf("CRACKED!!!\n");
 }
