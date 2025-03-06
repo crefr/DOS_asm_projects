@@ -4,14 +4,23 @@
 
 #include "cracker.h"
 
-extern FILE * G_program_file;
-
-void crackProgram(void)
+enum crack_status crackProgram(const char * program_file_name)
 {
-    swapBytes(G_program_file);
-    swapToNop(G_program_file, 0x0003, 0x0006);      // nopping to the end of the program
+    FILE * program_file = fopen(program_file_name, "rb+");
+
+    if (program_file == NULL){
+        fprintf(stderr, "File '%s' does not exist.\n", program_file_name);
+        return NO_FILE;
+    }
+
+    swapBytes(program_file);
+    swapToNop(program_file, 0x0003, 0x0006);      // nopping to the end of the program
+
+    fclose(program_file);
 
     printf("CRACKED!!!\n");
+
+    return SUCCESS;
 }
 
 void swapBytes(FILE * program_file)

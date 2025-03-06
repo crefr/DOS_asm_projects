@@ -39,8 +39,8 @@ endif
 
 CFLAGS := -I./$(HEADDIR) $(CFLAGS)
 
-ALLDEPS = $(HEADDIR)cracker.h $(HEADDIR)window_handler.h
-OBJECTS = main.o cracker.o window_handler.o
+ALLDEPS = $(HEADDIR)cracker.h $(HEADDIR)window_handler.h $(HEADDIR)sfml_ui.h
+OBJECTS = main.o cracker.o window_handler.o sfml_ui.o
 OBJECTS_WITH_DIR 	 = $(addprefix $(OBJDIR),$(OBJECTS))
 
 $(FILENAME): $(OBJECTS_WITH_DIR) $(BINTREE_OBJ_WITH_DIR) $(TREELIB) $(TABLELIB)
