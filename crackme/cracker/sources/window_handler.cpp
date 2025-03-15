@@ -18,12 +18,9 @@ typedef struct {
 static const size_t MAX_FILE_NAME_LEN = 256;
 //! WARNING: GLOBAL
 static char G_file_name[MAX_FILE_NAME_LEN] = "../artem_crackme/CRACKED_MY.COM";
-
-// static const size_t MAX_STATUS_LEN = 256;
-// static char status_string[MAX_STATUS_LEN] = "";
 static sf::Text status_text;
 
-void crackButton(sf::RenderWindow& window) // *
+void crackButton(sf::RenderWindow * window)
 {
     enum crack_status status = crackProgram(G_file_name);
 
@@ -90,25 +87,25 @@ void SFML_window()
     status_text.setCharacterSize(24);
     status_text.setFillColor(sf::Color::Red);
 
-    const sf::Vector2f button1_size(win_size.x * 0.1, win_size.y * 0.1);
-    const sf::Vector2f button1_pos (win_size.x * 0.8, win_size.y * 0.8);
+    const sf::Vector2f apply_button_shape_size(win_size.x * 0.1, win_size.y * 0.1);
+    const sf::Vector2f apply_button_shape_pos (win_size.x * 0.8, win_size.y * 0.8);
 
-    sf::RectangleShape button1(button1_size);
-    button1.setPosition(button1_pos);
-    button1.setFillColor(sf::Color::Green);
-    button1.setOutlineColor(sf::Color(0, 100, 0));
-    button1.setOutlineThickness(3.f);
-    newButton(&button1, sf::Vector2i{button1_pos}, sf::Vector2i{button1_size}, crackButton);
+    sf::RectangleShape apply_button_shape(apply_button_shape_size);
+    apply_button_shape.setPosition(apply_button_shape_pos);
+    apply_button_shape.setFillColor(sf::Color::Green);
+    apply_button_shape.setOutlineColor(sf::Color(0, 100, 0));
+    apply_button_shape.setOutlineThickness(3.f);
+    button_t apply_button = newButton(&apply_button_shape, sf::Vector2i{apply_button_shape_pos}, sf::Vector2i{apply_button_shape_size}, crackButton);
 
-    const sf::Vector2i field1_size(win_size.x * 0.8, win_size.y * 0.1);
-    const sf::Vector2i field1_pos (win_size.x * 0.1, win_size.y * 0.8);
+    const sf::Vector2i file_field_shape_size(win_size.x * 0.8, win_size.y * 0.1);
+    const sf::Vector2i file_field_shape_pos (win_size.x * 0.1, win_size.y * 0.8);
 
-    sf::RectangleShape field1(sf::Vector2f{field1_size});
-    field1.setPosition(sf::Vector2f{field1_pos});
-    field1.setFillColor(sf::Color::White);
-    field1.setOutlineColor(sf::Color(100, 100, 100));
-    field1.setOutlineThickness(3.f);
-    newTextField(&field1, sf::Vector2i{field1_pos}, sf::Vector2i{field1_size}, &font, sf::Color::Blue, 24, G_file_name, MAX_FILE_NAME_LEN);
+    sf::RectangleShape file_field_shape(sf::Vector2f{file_field_shape_size});
+    file_field_shape.setPosition(sf::Vector2f{file_field_shape_pos});
+    file_field_shape.setFillColor(sf::Color::White);
+    file_field_shape.setOutlineColor(sf::Color(100, 100, 100));
+    file_field_shape.setOutlineThickness(3.f);
+    text_field_t file_name_field = newTextField(&file_field_shape, sf::Vector2i{file_field_shape_pos}, sf::Vector2i{file_field_shape_size}, &font, sf::Color::Blue, 24, G_file_name, MAX_FILE_NAME_LEN);
 
     const size_t rect_num = 50;
     moving_rect_t rects[rect_num] = {};
@@ -137,15 +134,15 @@ void SFML_window()
                 case sf::Event::MouseButtonPressed: {
                     sf::Vector2i mouse_pos = sf::Mouse::getPosition(window);
                     if (event.mouseButton.button == sf::Mouse::Left){
-                        handleButtons(window, mouse_pos);
-                        checkActiveFields(mouse_pos);
+                        checkButton(&window, &apply_button, mouse_pos);
+                        checkActiveField(&file_name_field, mouse_pos);
                     }
 
                     break;
                 }
 
                 case sf::Event::TextEntered: {
-                    textFieldsNewChar(event.text.unicode);
+                    textFieldNewChar(&file_name_field, event.text.unicode);
 
                     break;
                 }
@@ -163,8 +160,8 @@ void SFML_window()
         window.draw(status_bar);
         window.draw(status_text);
 
-        drawTextFields(window);
-        drawButtons(window);
+        drawTextField(&window, &file_name_field);
+        drawButton(&window, &apply_button);
 
         window.display();
     }

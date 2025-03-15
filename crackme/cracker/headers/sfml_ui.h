@@ -19,24 +19,22 @@ typedef struct {
     sf::Vector2i pos;
     sf::Vector2i size;
 
-    void (*handler_func)(sf::RenderWindow&);
+    void (*handler_func)(sf::RenderWindow *);
 } button_t;
 
 
-void newTextField(sf::Shape * shape, sf::Vector2i pos, sf::Vector2i size, sf::Font * font, sf::Color color, unsigned int char_size, char * buffer, size_t max_text_size);
+text_field_t newTextField(sf::Shape * shape, sf::Vector2i pos, sf::Vector2i size, sf::Font * font, sf::Color color, unsigned int char_size, char * buffer, size_t max_text_size);
+void drawTextField(sf::RenderWindow * window, text_field_t * text_f);
 
-void drawTextFields(sf::RenderWindow& window);
+void textFieldNewChar(text_field_t * text_f, char new_char);
 
-void textFieldsNewChar(char new_char);
-
-void checkActiveFields(sf::Vector2i mouse_pos);
-
+void checkActiveField(text_field_t * text_f, sf::Vector2i mouse_pos);
 
 
-void newButton(sf::Shape * shape, sf::Vector2i pos, sf::Vector2i size, void (*handler_func)(sf::RenderWindow&));
+button_t newButton(sf::Shape * shape, sf::Vector2i pos, sf::Vector2i size, void (*handler_func)(sf::RenderWindow *));
 
-void drawButtons(sf::RenderWindow& window);
+void drawButton(sf::RenderWindow * window, button_t * button);
 
-void handleButtons(sf::RenderWindow& window, sf::Vector2i mouse_pos);
+void checkButton(sf::RenderWindow * window, button_t * button, sf::Vector2i mouse_pos);
 
 #endif
