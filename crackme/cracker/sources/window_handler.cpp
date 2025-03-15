@@ -16,13 +16,13 @@ typedef struct {
 } moving_rect_t;
 
 /************************** CONSTANTS **************************/
-const sf::Vector2f win_size(600, 450);
+static const sf::Vector2f win_size(600, 450);
 
-const sf::Vector2f apply_button_size(win_size.x * 0.1, win_size.y * 0.1);
-const sf::Vector2f apply_button_pos (win_size.x * 0.8, win_size.y * 0.8);
+static const sf::Vector2f apply_button_size(win_size.x * 0.1, win_size.y * 0.1);
+static const sf::Vector2f apply_button_pos (win_size.x * 0.8, win_size.y * 0.8);
 
-const sf::Vector2f file_field_size(win_size.x * 0.8, win_size.y * 0.1);
-const sf::Vector2f file_field_pos (win_size.x * 0.1, win_size.y * 0.8);
+static const sf::Vector2f file_field_size(win_size.x * 0.8, win_size.y * 0.1);
+static const sf::Vector2f file_field_pos (win_size.x * 0.1, win_size.y * 0.8);
 
 static const size_t MAX_FILE_NAME_LEN = 256;
 /***************************************************************/
