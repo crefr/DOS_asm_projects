@@ -72,14 +72,13 @@ void checkActiveField(text_field_t * text_f, sf::Vector2i mouse_pos)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-button_t newButton(sf::Shape * shape, sf::Vector2i pos, sf::Vector2i size, void (*handler_func)(sf::RenderWindow *))
+button_t newButton(sf::Shape * shape, sf::Vector2i pos, sf::Vector2i size)
 {
     button_t button = {};
 
     button.pos  = pos;
     button.size = size;
     button.shape = shape;
-    button.handler_func = handler_func;
 
     return button;
 }
@@ -89,12 +88,11 @@ void drawButton(sf::RenderWindow * window, button_t * button)
     window->draw(*(button->shape));
 }
 
-void checkButton(sf::RenderWindow * window, button_t * button, sf::Vector2i mouse_pos)
+bool checkButton(button_t * button, sf::Vector2i mouse_pos)
 {
     sf::Vector2i rel_pos = mouse_pos - button->pos;
 
-    if ((0 <= rel_pos.x &&  rel_pos.x <= button->size.x)
-     && (0 <= rel_pos.y &&  rel_pos.y <= button->size.y)){
-        button->handler_func(window);
-    }
+    bool button_is_pushed = (0 <= rel_pos.x &&  rel_pos.x <= button->size.x)
+                         && (0 <= rel_pos.y &&  rel_pos.y <= button->size.y);
+    return button_is_pushed;
 }
