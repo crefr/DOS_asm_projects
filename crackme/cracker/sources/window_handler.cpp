@@ -9,6 +9,11 @@
 #include "cracker.h"
 #include "sfml_ui.h"
 
+typedef struct {
+    sf::RectangleShape shape;
+    sf::Vector2f velocity;
+    sf::Vector2f position;
+} moving_rect_t;
 
 static const size_t MAX_FILE_NAME_LEN = 256;
 //! WARNING: GLOBAL
@@ -18,7 +23,7 @@ static char G_file_name[MAX_FILE_NAME_LEN] = "../artem_crackme/CRACKED_MY.COM";
 // static char status_string[MAX_STATUS_LEN] = "";
 static sf::Text status_text;
 
-void crackButton(sf::RenderWindow& window)
+void crackButton(sf::RenderWindow& window) // *
 {
     enum crack_status status = crackProgram(G_file_name);
 
@@ -28,7 +33,7 @@ void crackButton(sf::RenderWindow& window)
     }
 
     if (status == INCORRECT_FILE){
-        status_text.setString("Incorrect file");
+        status_text.setString("Incorrect file (wrong hash)");
         return;
     }
 
@@ -36,12 +41,20 @@ void crackButton(sf::RenderWindow& window)
     status_text.setString("Successfully cracked");
 }
 
-void animation(sf::RenderWindow& window, sf::Vector2f win_size)
+void animation(sf::Vector2f win_size, moving_rect_t * rects, const size_t rect_num)
 {
-    const size_t rect_num = 100;
-
     for (size_t rect_index = 0; rect_index < rect_num; rect_index++){
+        sf::Vector2f new_pos = (rects[rect_index].position + rects[rect_index].velocity);
+        sf::Vector2f rect_size = rects[rect_index].shape.getSize();
 
+        if (new_pos.x > win_size.x)
+            new_pos.x -= win_size.x + rect_size.x;
+
+        if (new_pos.y > win_size.y)
+            new_pos.y -= win_size.y + rect_size.y;
+
+        rects[rect_index].position = new_pos;
+        rects[rect_index].shape.setPosition(new_pos);
     }
 }
 
@@ -54,7 +67,7 @@ void SFML_window()
     window.setFramerateLimit(60);
 
     sf::Font font;
-    font.loadFromFile("fonts/Roboto-Regular.ttf");
+    font.loadFromFile("fonts/Ubuntu-Regular.ttf");
 
     sf::Music music;
     if (!music.openFromFile("music.ogg")){
@@ -97,6 +110,20 @@ void SFML_window()
     field1.setOutlineThickness(3.f);
     newTextField(&field1, sf::Vector2i{field1_pos}, sf::Vector2i{field1_size}, &font, sf::Color::Blue, 24, G_file_name, MAX_FILE_NAME_LEN);
 
+    const size_t rect_num = 50;
+    moving_rect_t rects[rect_num] = {};
+
+    for (size_t rect_index = 0; rect_index < rect_num; rect_index++) {
+        rects[rect_index].position = sf::Vector2f(rand() % (const int)win_size.x, rand() % (const int)win_size.y);
+        rects[rect_index].velocity = sf::Vector2f(rand() % 10 + 2, rand() % 10 + 2);
+
+        rects[rect_index].shape.setFillColor(sf::Color(rand() % 100 + 156, rand() % 100 + 156, rand() % 100 + 156));
+        rects[rect_index].shape.setSize(sf::Vector2f(rand() % 100 + 25, rand() % 100 + 25));
+        rects[rect_index].shape.setPosition(rects[rect_index].position);
+    }
+
+    window.clear(sf::Color::White);
+
     while (window.isOpen()) {
         sf::Event event;
 
@@ -124,7 +151,14 @@ void SFML_window()
                 }
             }
         }
-        window.clear();
+        animation(win_size, rects, rect_num);
+
+        // window.clear();
+        window.clear(sf::Color::White);
+
+        for (size_t rect_index = 0; rect_index < rect_num; rect_index++){
+            window.draw(rects[rect_index].shape);
+        }
 
         window.draw(status_bar);
         window.draw(status_text);
