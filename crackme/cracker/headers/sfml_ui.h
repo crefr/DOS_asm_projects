@@ -24,6 +24,7 @@ typedef struct {
 
 
 text_field_t newTextField(sf::Shape * shape, sf::Vector2i pos, sf::Vector2i size, sf::Font * font, sf::Color color, unsigned int char_size, char * buffer, size_t max_text_size);
+
 void drawTextField(sf::RenderWindow * window, text_field_t * text_f);
 
 void textFieldNewChar(text_field_t * text_f, char new_char);
